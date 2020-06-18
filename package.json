@@ -1,0 +1,44 @@
+{
+  "name": "react-content-block-controller",
+  "version": "0.1.0",
+  "description": "ContentBlockController",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack --mode=production --config ./webpack.config.js",
+    "watch": "webpack --mode=development --config ./webpack.config.js --watch",
+    "compile": "npx babel src --out-dir lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/psytelepat/react-content-block-controller.git"
+  },
+  "author": "Mikhail Prokofyev",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/cli": "^7.10.1",
+    "@babel/core": "^7.10.2",
+    "@babel/preset-env": "^7.10.2",
+    "@babel/preset-react": "^7.10.1",
+    "babel-loader": "^8.1.0",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-plugin-transform-react-jsx": "^6.24.1",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "css-loader": "^3.6.0",
+    "style-loader": "^1.2.1",
+    "webpack": "^4.43.0",
+    "webpack-cli": "^3.3.12"
+  },
+  "dependencies": {
+    "axios": "^0.19.2",
+    "draft-js": "^0.11.6",
+    "draftjs-to-html": "^0.9.1",
+    "html-to-draftjs": "^1.5.0",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
+    "react-draft-wysiwyg": "^1.14.5",
+    "react-modal": "^3.11.2",
+    "react-responsive-carousel": "^3.2.8",
+    "react-sortablejs": "^2.0.11"
+  }
+}
