@@ -91,12 +91,12 @@ class ImageDataEditor extends React.Component {
 
         return (
             <ModalForm>
-                <ModalCloseButton onClick={this.props.onClose} />
                 <LabeledInput title="Title" value={this.state.title} onChange={this.onTitleChange.bind(this)} />
                 <LabeledInput title="Description" value={this.state.description} onChange={this.onDescriptionChange.bind(this)} />
                 <LabeledInput title="Alt" value={this.state.alt} onChange={this.onAltChange.bind(this)} />
                 <LabeledInput title="Href" value={this.state.href} onChange={this.onHrefChange.bind(this)} />
                 <IconedButton icon="save" buttonColor="success" name="сохранить" onClick={this.saveData.bind(this)} />
+                <ModalCloseButton onClick={this.props.onClose} />
             </ModalForm>
         );
     }
