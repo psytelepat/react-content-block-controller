@@ -18,14 +18,9 @@ class UploadImage extends React.Component {
     }
 
     onFileUpload() {
-        var self = this;
-
-        const config = {
-            onUploadProgress: progressEvent => self.setState({ progress: Math.round((progressEvent.loaded * 100) / progressEvent.total) }),
-        }
+        let self = this;
 
         const formData = new FormData();
-
         for (let i = 0; i < this.state.selectedFiles.length; i++) {
             formData.append(
                 this.props.handle+"["+i+"]", 
@@ -34,15 +29,17 @@ class UploadImage extends React.Component {
             );
         }
 
-        this.setState({ isUploading: true, progress: 0 });
-
-        axios.post(this.props.uploadURL, formData, config)
-        .then(resp => {
-            self.setState({ isUploading: false });
-            (typeof self.props.onSuccess == 'function') && self.props.onSuccess(resp);
-        }).catch(error => {
-            self.setState({ isUploading: false });
-            (typeof self.props.onError == 'function') && self.props.onError(error);
+        this.setState({ isUploading: true, progress: 0 }, () => {
+            axios.post(self.props.uploadURL, formData, {
+                onUploadProgress: progressEvent => self.setState({ progress: Math.round((progressEvent.loaded * 100) / progressEvent.total) }),
+            })
+            .then(resp => {
+                self.setState({ isUploading: false });
+                (typeof self.props.onSuccess == 'function') && self.props.onSuccess(resp);
+            }).catch(error => {
+                self.setState({ isUploading: false });
+                (typeof self.props.onError == 'function') && self.props.onError(error);
+            });
         });
     };
 

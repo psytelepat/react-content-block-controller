@@ -1,16 +1,15 @@
 import React from 'react'
-
-import AddButton from './AddButton'
+import { IconedButton } from './styles'
 
 class AddButtons extends React.Component {
     render() {
         var items = [];
         for (var id in this.props.modes) {
             var { tid, name, icon } = this.props.modes[id];
-            items.push(<AddButton key={id} id={id} name={name} icon={icon} createBlock={this.props.createBlock} />);
+            items.push(((id) => <IconedButton key={id} id={id} name={name} buttonColor="primary" icon={icon} onClick={() => this.props.createBlock(id)} />)(id));
         }
         return (
-            <div className="addButtons">
+            <div>
                 {items}
             </div>
         );

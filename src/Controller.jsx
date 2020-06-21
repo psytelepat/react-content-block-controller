@@ -1,18 +1,22 @@
 import React from 'react'
 import axios from 'axios'
+import Modal from 'react-modal'
+
+Modal.setAppElement(document.body);
 
 import AddButtons from './AddButtons'
 import 'react-draft-wysiwyg/dist/react-draft-wysiwyg.css';
 
 import { ReactSortable } from "react-sortablejs";
 
-import Text from './Text'
-import Image from './Image'
-import Slider from './Slider'
-import Video from './Video'
-import Quote from './Quote'
-import Subscription from './Subscription'
-import PublicatorForm from './PublicatorForm'
+import Text from './block/Text'
+import Image from './block/Image'
+import Slider from './block/Slider'
+import Video from './block/Video'
+import Quote from './block/Quote'
+import DoubleColumn from './block/DoubleColumn'
+import Subscription from './block/Subscription'
+import PublicatorForm from './block/PublicatorForm'
 
 class Controller extends React.Component {
     
@@ -20,7 +24,8 @@ class Controller extends React.Component {
         super(props);
 
         this.state = {
-            loaded: false,
+            isLoading: false,
+            isLoaded: false,
             error: false,
             config: false,
             content: false,
@@ -28,159 +33,141 @@ class Controller extends React.Component {
         };
 
         this.url = props.url + "/" + props.trg + "/" + props.usr;
-
-        this.createBlock = this.createBlock.bind(this);
-        this.reloadBlock = this.reloadBlock.bind(this);
-        this.saveBlock = this.saveBlock.bind(this);
-        this.deleteBlock = this.deleteBlock.bind(this);
+        this.requestHeaders = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        }
     }
 
     createBlock(mode) {
-        fetch(this.url + "/create/" + mode, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-            },
-        })
+        fetch(this.url + "/create/" + mode, {headers: this.requestHeaders,})
         .then(resp => resp.json())
         .then(
             (resp) => {
+                resp.content.__justCreated = true;
                 this.setState(state => ({ content: [...state.content, resp.content] }))
             },
             (error) => {
                 this.setState({
-                    loaded: false,
+                    isLoaded: false,
                     error: error,
                 });
+                this.onError(error)
             }
         );
     }
 
     replaceBlock(grp, content) {
-        this.setState({ content: this.state.content.map(block => (block.grp == grp) ? content : block ) });
+        this.setState({ content: this.state.content.map(block => (block.grp == grp) ? content : block ) })
     }
 
     reloadBlock(grp, callback) {
-        let self = this;
-        fetch(this.url + "/" + grp, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-            }
-        })
+        fetch(this.url + "/" + grp, {headers: this.requestHeaders,})
         .then(resp => resp.json())
         .then(
             (resp) => {
-                self.replaceBlock(grp,resp.content);
-                (typeof callback == 'function') && callback();
+                this.replaceBlock(grp,resp.content);
+                (typeof callback == 'function') && callback(resp)
             },
             (error) => {
-                console.log(error);
-                (typeof callback == 'function') && callback();
+                this.onError(error)
             }
         );
+    }
+
+    onError(error) {
+
     }
 
     saveBlock(grp, data, callback) {
-        var self = this;
         data._token = document.getElementsByName('csrf-token')[0].getAttribute('content');
+        
         fetch(this.url + "/" + grp + "/edit", {
             method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data)
+            headers: this.requestHeaders,
+            body: JSON.stringify(data),
         })
         .then(resp => resp.json())
         .then(
             (resp) => {
-                self.replaceBlock(grp,resp.content);
-                (typeof callback == 'function') && callback();
+                this.replaceBlock(grp,resp.content);
+                (typeof callback == 'function') && callback(resp)
             },
             (error) => {
-                console.log(error);
-                (typeof callback == 'function') && callback();
+                this.onError(error)
             }
         );
     }
 
-    deleteBlock(grp) {
+    deleteBlock(grp, callback) {
         if (confirm('Удалить блок?')) {
             fetch(this.url + "/" + grp + "/delete", {
                 method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    _token: document.getElementsByName('csrf-token')[0].getAttribute('content')
-                })
+                headers: this.requestHeaders,
+                body: JSON.stringify({ _token: document.getElementsByName('csrf-token')[0].getAttribute('content') }),
             })
             .then(resp => resp.json())
             .then(
                 (resp) => {
-                    this.setState(state => ({ content : state.content.filter(item => item.grp != grp) }));
+                    this.setState(state => ({ content : state.content.filter(item => item.grp != grp) }))
                 },
                 (error) => {
-                    alert('Ошибка удаления блока.')
+                    this.onError(error)
                 }
             );
         }
     }
 
-    componentDidMount(){
-        fetch(this.url + "/json", {
-            method: "GET",
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-            }
-        })
+    fetchData(callback) {
+        fetch(this.url + "/json",{headers: this.requestHeaders,})
         .then(resp => resp.json())
         .then(
             (resp) => {
                 this.setState({
-                    loaded: true,
+                    isLoaded: true,
                     config: resp.config,
                     content: resp.content,
+                    isLoading: false,
                 });
+                (typeof callback == 'function') && callback(resp)
             },
             (error) => {
-                this.setState({
-                    loaded: false,
-                    error: error,
-                });
+                this.onError(error)
             }
         )
     }
 
+    componentDidMount(){
+        this.setState({isLoading: true}, this.fetchData())
+    }
+
     onSortableStart() {
-        this.content_snapshot = this.state.content;
+        this.content_snapshot = this.state.content
     }
 
     onSortableEnd(e) {
         let self = this,
             from_id = this.content_snapshot[e.oldIndex].grp,
             to_id = this.content_snapshot[e.newIndex].grp;
+        
+        if (from_id == to_id)
+            return;
+
         this.setState({ disableSortable: true });
+
         axios.post(this.url + "/" + from_id + "/repos/" + to_id, {from_id: from_id, to_id: to_id})
-        .then(function(){ self.setState({ disableSortable: false }); })
+        .then(function(){ self.setState({ disableSortable: false }) })
         .catch(function(error){
-            self.setState({ disableSortable: false });
-            alert(error);
+            self.setState({ disableSortable: false })
         });
     }
 
     render() {
         let blocks, buttons;
-        if (this.state.loaded) {
+        if (this.state.isLoaded) {
             blocks = <ReactSortable
                     list={this.state.content}
                     setList={newState => this.setState({ content: newState })}
-                    group="content-blocks"
                     animation={100}
                     delayOnTouchStart={true}
                     delay={2}
@@ -205,15 +192,15 @@ class Controller extends React.Component {
                     })}
                 </ReactSortable>
 
-            buttons = <AddButtons modes={this.state.config.block_modes} createBlock={this.createBlock.bind(this)} />;
+            buttons = <AddButtons modes={this.state.config.block_modes} createBlock={this.createBlock.bind(this)} />
         } else {
-            blocks = "Loading...";
-            buttons = null;
+            blocks = "Loading..."
+            buttons = null
         }
 
         return (
-            <div>
-                {blocks}                
+            <div style={{marginTop: "40px"}}>
+                {blocks}
                 {buttons}
             </div>
         );
