@@ -22,6 +22,7 @@ class Image extends AbstractContentBlock {
             <ContentBlock editor>
                 {this.toolBox()}
                 <UploadGallery
+                    id={"gallery-"+this.props.data.grp}
                     handle={this.imageUploadHandle}
                     previews={this.props.data.previews}
                     uploadURL={this.uploadGalleryURLBase + "upload/formData"}

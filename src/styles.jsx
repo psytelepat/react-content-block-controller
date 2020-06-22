@@ -26,17 +26,34 @@ export const UploadGalleryBox = styled.div`
     position: relative;
     padding: 10px;
     border: 1px #efefef solid;
+
+    nav.react-contextmenu {
+        background-color: #ffffff;
+
+        div.react-contextmenu-item {
+            font-size: 12px;
+            cursor: pointer;
+            padding: 4px 10px;
+            border-top: 1px #efefef solid;
+            &:first-of-type {
+                border-top: 0px;
+            }
+            &:hover {
+                background-color: #efefef;
+            }
+        }
+    }
 `
 
 export const UploadGalleryControls = styled.div`
     position: relative;
-    padding: 10px 0;
+    padding: 0px 0 20px 0;
     color: #333333;
     & > span {
-        font-size: 14px;
+        font-size: 12px;
         line-height: 1em;
         border-bottom: 1px #333333 dashed;
-        transition: color .5s ease, border-color .5s ease;
+        transition: color .25s ease, border-color .25s ease;
         cursor: pointer;
         &:hover {
             border-bottom-color: transparent;

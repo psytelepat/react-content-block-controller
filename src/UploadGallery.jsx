@@ -2,9 +2,11 @@ import React from 'react'
 import axios from 'axios'
 
 import Modal from 'react-modal'
+import { ContextMenu, MenuItem, ContextMenuTrigger } from 'react-contextmenu'
 
 import UploadImage from './UploadImage'
 import ImageDataEditor from './ImageDataEditor'
+import ImageCropEditor from './ImageCropEditor'
 
 import { ReactSortable } from "react-sortablejs";
 import { ContentBlock, UploadGalleryBox, UploadGalleryControls, ImageView } from './styles'
@@ -41,10 +43,20 @@ const PreviewImage = styled.div`
         size: cover;
     }
 
+    div.react-contextmenu-wrapper {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100px;
+        height: 100px;
+        z-index: 1;
+    }
+
     input[type="checkbox"] {
-      position: absolute;
-      top: 5px;
-      left: 5px;
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        z-index: 10;
     }
 `
 
@@ -55,6 +67,7 @@ class UploadGallery extends React.Component {
         this.state = {
             previews: props.previews,
             disableSortable: false,
+            croppingImageId: null,
             editingImageId: null
         };
 
@@ -81,14 +94,12 @@ class UploadGallery extends React.Component {
         this.setState({ disableSortable: false });
     }
 
-    onClick(event) {
-        if (event.ctrlKey) {
-            this.setState({editingImageId: event.target.getAttribute('name')});
-        }
-    }
-
     onCloseEditModal() {
         this.setState({editingImageId: null});
+    }
+
+    onCloseCropModal() {
+        this.setState({croppingImageId: null});
     }
 
     onToggleAll() {
@@ -148,6 +159,14 @@ class UploadGallery extends React.Component {
         .catch(this.onUploadError.bind(this));
     }
 
+    handleImageEdit(event, wrapper) {
+        this.setState({editingImageId: wrapper.target.getAttribute('name')});
+    }
+
+    handleImageCrop(event, wrapper) {
+        this.setState({croppingImageId: wrapper.target.getAttribute('name')});
+    }
+
     sortableGallery() {
         return <ReactSortable
             list={this.state.previews}
@@ -160,17 +179,23 @@ class UploadGallery extends React.Component {
             disabled={this.state.disableSortable}
         >
             {this.state.previews.map(item => (
-            <PreviewImage key={item.id} name={item.id} style={{backgroundImage: "url(" + item.url + ")"}} onClick={this.onClick.bind(this)}>
+            <PreviewImage key={item.id} style={{backgroundImage: "url(" + item.url + ")"}}>
+                <ContextMenuTrigger id={this.props.id} attributes={{ name: item.id }}><div/></ContextMenuTrigger>
                 <input type="checkbox" name={item.id} checked={this.state.deleteIds[item.id]} onChange={this.onDeleteCheckboxChange.bind(this)} />
-            </PreviewImage>))}
+            </PreviewImage>
+            ))}
         </ReactSortable>
     }
 
     render() {
         const hasImages = this.props.previews.length > 0;
-        const { editingImageId } = this.state;
+        const { editingImageId, croppingImageId } = this.state;
         return (
             <UploadGalleryBox>
+                <ContextMenu id={this.props.id} style={{zIndex: 1000}}>
+                    <MenuItem onClick={this.handleImageEdit.bind(this)}>Метаданные</MenuItem>
+                    <MenuItem onClick={this.handleImageCrop.bind(this)}>Кадрировать</MenuItem>
+                </ContextMenu>
                 <Modal
                     isOpen={!!editingImageId}
                     style={imageDataEditorModalStyles}
@@ -178,10 +203,17 @@ class UploadGallery extends React.Component {
                 >
                     {editingImageId && <ImageDataEditor key={editingImageId} url={this.props.editURL+"/"+editingImageId} onClose={this.onCloseEditModal.bind(this)} />}
                 </Modal>
+                <Modal
+                    isOpen={!!croppingImageId}
+                    style={imageDataEditorModalStyles}
+                    shouldCloseOnEsc={true}
+                >
+                    {croppingImageId && <ImageCropEditor key={croppingImageId} url={this.props.cropURL+"/"+croppingImageId} onClose={this.onCloseCropModal.bind(this)} />}
+                </Modal>
                 {hasImages && this.sortableGallery()}
                 {hasImages && (
                     <UploadGalleryControls>
-                        <span onClick={this.onToggleAll.bind(this)}>Выбрать все</span> | <span onClick={this.onDelete.bind(this)}>Удалить</span>
+                        <span onClick={this.onToggleAll.bind(this)}>Ометить все</span> | <span onClick={this.onDelete.bind(this)}>Удалить отмеченные</span>
                     </UploadGalleryControls>
                 )}
                 <UploadImage handle={this.props.handle} uploadURL={this.props.uploadURL} onSuccess={this.onUploadSuccess.bind(this)} onError={this.onUploadError.bind(this)} />
