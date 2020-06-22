@@ -24,13 +24,9 @@ class Image extends AbstractContentBlock {
                 <UploadGallery
                     id={"gallery-"+this.props.data.grp}
                     handle={this.imageUploadHandle}
-                    previews={this.props.data.previews}
-                    uploadURL={this.uploadGalleryURLBase + "upload/formData"}
-                    reposURL={this.uploadGalleryURLBase + "repos"}
-                    deleteURL={this.uploadGalleryURLBase + "delete"}
-                    editURL={this.uploadGalleryURLBase + "edit"}
-                    cropURL={this.uploadGalleryURLBase + "crop"}
+                    baseURL={this.uploadGalleryURLBase}
                     onUpload={this.onUpload.bind(this)}
+                    previews={this.props.data.previews}
                 />
                 {this.saveButton()}
             </ContentBlock>

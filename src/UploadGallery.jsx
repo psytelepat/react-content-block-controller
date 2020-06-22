@@ -65,13 +65,68 @@ class UploadGallery extends React.Component {
         super(props);
 
         this.state = {
-            previews: props.previews,
+            previews: props.previews || null,
             disableSortable: false,
             croppingImageId: null,
-            editingImageId: null
+            editingImageId: null,
+            isLoading: true,
+            hasError: false,
         };
 
         this.state.deleteIds = this.fillDeletedIds(false);
+
+        let baseURL = this.props.baseURL;
+        if (baseURL) {
+            this.dataURL = baseURL + "json";
+            this.uploadURL = baseURL + "upload/formData";
+            this.reposURL = baseURL + "repos";
+            this.deleteURL = baseURL + "delete";
+            this.editURL = baseURL + "edit";
+            this.cropURL = baseURL + "crop";
+        }
+
+        if (this.props.dataURL)
+            this.dataURL = this.props.dataURL;
+        if (this.props.uploadURL)
+            this.uploadURL = this.props.uploadURL;
+        if (this.props.reposURL)
+            this.reposURL = this.props.reposURL;
+        if (this.props.deleteURL)
+            this.deleteURL = this.props.deleteURL;
+        if (this.props.editURL)
+            this.editURL = this.props.editURL;
+        if (this.props.cropURL)
+            this.cropURL = this.props.cropURL;
+    }
+
+    fetchData(callback) {
+        if(!this.dataURL){
+            this.setState({hasError: 'no dataURL'});
+            return;
+        }
+
+        fetch(this.dataURL)
+        .then(resp => resp.json())
+        .then(
+            (resp) => {
+                this.setState({
+                    previews: resp.previews,
+                    isLoading: false,
+                }, () => this.fillDeletedIds(false));
+                (typeof callback == 'function') && callback(resp)
+            },
+            (error) => {
+                this.setState({hasError: error})
+            }
+        )
+    }
+
+    componentDidMount() {
+        if (this.state.previews) {
+            this.setState({isLoading: false});
+        } else {
+            this.fetchData();
+        }
     }
 
     onUploadSuccess(resp) {
@@ -79,7 +134,7 @@ class UploadGallery extends React.Component {
             this.setState({
                 disableSortable: false,
                 deleteIds: this.fillDeletedIds(false),
-                previews: resp.data.content.previews,
+                previews: resp.data.previews || resp.data.content.previews, //TODO: resolve to resp.data.previews
             });
 
             if (typeof this.props.onUpload == 'function') {
@@ -121,15 +176,16 @@ class UploadGallery extends React.Component {
                 ids.push(id);
             }
         }
-        axios.post(this.props.deleteURL, {delete: ids.join(',')})
+        axios.post(this.deleteURL, {delete: ids.join(',')})
         .then(this.onUploadSuccess.bind(this))
         .catch(this.onUploadError.bind(this));
     }
 
     fillDeletedIds(status) {
         let deleteIds = {};
-        for (let i = 0; i < this.state.previews.length; i++)
-            deleteIds[this.state.previews[i].id] = status;
+        if (this.state.previews && this.state.previews.length)
+            for (let i = 0; i < this.state.previews.length; i++)
+                deleteIds[this.state.previews[i].id] = status;
         return deleteIds;
     }
 
@@ -154,7 +210,7 @@ class UploadGallery extends React.Component {
         if (from_id == to_id)
             return;
         this.setState({ disableSortable: true });
-        axios.post(this.props.reposURL + "/" + from_id + "/" + to_id, {from_id: from_id, to_id: to_id})
+        axios.post(this.reposURL + "/" + from_id + "/" + to_id, {from_id: from_id, to_id: to_id})
         .then(function(){ self.setState({ disableSortable: false }); })
         .catch(this.onUploadError.bind(this));
     }
@@ -188,8 +244,8 @@ class UploadGallery extends React.Component {
     }
 
     render() {
-        const hasImages = this.props.previews.length > 0;
-        const { editingImageId, croppingImageId } = this.state;
+        const hasImages = this.state.previews && this.state.previews.length > 0;
+        const { editingImageId, croppingImageId, hasError } = this.state;
         return (
             <UploadGalleryBox>
                 <ContextMenu id={this.props.id} style={{zIndex: 1000}}>
@@ -201,14 +257,14 @@ class UploadGallery extends React.Component {
                     style={imageDataEditorModalStyles}
                     shouldCloseOnEsc={true}
                 >
-                    {editingImageId && <ImageDataEditor key={editingImageId} url={this.props.editURL+"/"+editingImageId} onClose={this.onCloseEditModal.bind(this)} />}
+                    {editingImageId && <ImageDataEditor key={editingImageId} url={this.editURL+"/"+editingImageId} onClose={this.onCloseEditModal.bind(this)} />}
                 </Modal>
                 <Modal
                     isOpen={!!croppingImageId}
                     style={imageDataEditorModalStyles}
                     shouldCloseOnEsc={true}
                 >
-                    {croppingImageId && <ImageCropEditor key={croppingImageId} url={this.props.cropURL+"/"+croppingImageId} onClose={this.onCloseCropModal.bind(this)} />}
+                    {croppingImageId && <ImageCropEditor key={croppingImageId} url={this.cropURL+"/"+croppingImageId} onClose={this.onCloseCropModal.bind(this)} />}
                 </Modal>
                 {hasImages && this.sortableGallery()}
                 {hasImages && (
@@ -216,7 +272,8 @@ class UploadGallery extends React.Component {
                         <span onClick={this.onToggleAll.bind(this)}>Ометить все</span> | <span onClick={this.onDelete.bind(this)}>Удалить отмеченные</span>
                     </UploadGalleryControls>
                 )}
-                <UploadImage handle={this.props.handle} uploadURL={this.props.uploadURL} onSuccess={this.onUploadSuccess.bind(this)} onError={this.onUploadError.bind(this)} />
+                {!hasError && <UploadImage handle={this.props.handle} uploadURL={this.uploadURL} onSuccess={this.onUploadSuccess.bind(this)} onError={this.onUploadError.bind(this)} />}
+                {hasError && <div>Error: {hasError.toString()}</div>}
             </UploadGalleryBox>
         );
     }
